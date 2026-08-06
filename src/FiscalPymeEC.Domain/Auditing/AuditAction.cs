@@ -17,5 +17,6 @@ public enum AuditAction
     InvoiceSigned = 9,
     SentToSri = 10,
     InvoiceAuthorized = 11,
-    InvoiceRejected = 12
+    InvoiceRejected = 12,
+    Deleted = 13
 }

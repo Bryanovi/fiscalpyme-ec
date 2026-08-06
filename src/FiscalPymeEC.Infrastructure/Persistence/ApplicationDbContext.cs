@@ -9,6 +9,9 @@ using FiscalPymeEC.Domain.Products;
 using Microsoft.EntityFrameworkCore;
 using FiscalPymeEC.Application.Common.Interfaces;
 using FiscalPymeEC.Domain.Common;
+using System.Text.Json;
+using FiscalPymeEC.Domain.Auditing;
+using Microsoft.EntityFrameworkCore.ChangeTracking;
 
 namespace FiscalPymeEC.Infrastructure.Persistence;
 
@@ -46,6 +49,7 @@ public sealed class ApplicationDbContext
     public override int SaveChanges()
     {
         ApplyAuditMetadata();
+        AddAuditEntries();
 
         return base.SaveChanges();
     }
@@ -54,6 +58,7 @@ public sealed class ApplicationDbContext
         CancellationToken cancellationToken = default)
     {
         ApplyAuditMetadata();
+        AddAuditEntries();
 
         return base.SaveChangesAsync(cancellationToken);
     }
@@ -65,6 +70,144 @@ public sealed class ApplicationDbContext
 
         modelBuilder.ApplyConfigurationsFromAssembly(
             typeof(ApplicationDbContext).Assembly);
+    }
+
+    private void AddAuditEntries()
+    {
+        var changedEntries = ChangeTracker
+            .Entries<Entity>()
+            .Where(entry =>
+                entry.Entity is not AuditEntry &&
+                entry.State is EntityState.Added
+                    or EntityState.Modified
+                    or EntityState.Deleted)
+            .ToList();
+
+        var auditEntries = changedEntries
+            .Select(CreateAuditEntry)
+            .ToList();
+
+        AuditEntries.AddRange(auditEntries);
+    }
+
+    private AuditEntry CreateAuditEntry(
+    EntityEntry<Entity> entry)
+    {
+        var oldValues = new Dictionary<string, object?>();
+        var newValues = new Dictionary<string, object?>();
+
+        foreach (var property in entry.Properties)
+        {
+            var propertyName = property.Metadata.Name;
+
+            if (ShouldIgnoreProperty(propertyName))
+            {
+                continue;
+            }
+
+            if (entry.State == EntityState.Modified &&
+                !property.IsModified)
+            {
+                continue;
+            }
+
+            switch (entry.State)
+            {
+                case EntityState.Added:
+                    newValues[propertyName] =
+                        property.CurrentValue;
+                    break;
+
+                case EntityState.Modified:
+                    oldValues[propertyName] =
+                        property.OriginalValue;
+
+                    newValues[propertyName] =
+                        property.CurrentValue;
+                    break;
+
+                case EntityState.Deleted:
+                    oldValues[propertyName] =
+                        property.OriginalValue;
+                    break;
+            }
+        }
+
+        return new AuditEntry(
+            userId: _currentUserService.UserId,
+            action: GetAuditAction(entry.State),
+            entityName: entry.Metadata.ClrType.Name,
+            entityId: entry.Entity.Id.ToString(),
+            occurredAtUtc: _clock.UtcNow,
+            oldValuesJson: SerializeValues(oldValues),
+            newValuesJson: SerializeValues(newValues),
+            correlationId: _currentUserService.CorrelationId,
+            ipAddress: _currentUserService.IpAddress);
+    }
+
+    private static AuditAction GetAuditAction(
+    EntityState entityState)
+    {
+        return entityState switch
+        {
+            EntityState.Added => AuditAction.Created,
+            EntityState.Modified => AuditAction.Updated,
+            EntityState.Deleted => AuditAction.Deleted,
+
+            _ => throw new InvalidOperationException(
+                $"El estado {entityState} no puede auditarse.")
+        };
+    }
+
+    private static string? SerializeValues(
+        Dictionary<string, object?> values)
+    {
+        if (values.Count == 0)
+        {
+            return null;
+        }
+
+        return JsonSerializer.Serialize(
+            values,
+            new JsonSerializerOptions
+            {
+                DictionaryKeyPolicy =
+                    JsonNamingPolicy.CamelCase
+            });
+    }
+
+    private static bool ShouldIgnoreProperty(
+        string propertyName)
+    {
+        string[] ignoredProperties =
+        [
+            "Id",
+        "CreatedAtUtc",
+        "CreatedBy",
+        "UpdatedAtUtc",
+        "UpdatedBy"
+        ];
+
+        if (ignoredProperties.Contains(propertyName))
+        {
+            return true;
+        }
+
+        string[] sensitiveTerms =
+        [
+            "Password",
+        "PasswordHash",
+        "Token",
+        "RefreshToken",
+        "PrivateKey",
+        "Certificate",
+        "ConnectionString"
+        ];
+
+        return sensitiveTerms.Any(term =>
+            propertyName.Contains(
+                term,
+                StringComparison.OrdinalIgnoreCase));
     }
 
     private void ApplyAuditMetadata()
