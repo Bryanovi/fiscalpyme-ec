@@ -8,6 +8,8 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using FiscalPymeEC.Infrastructure.Authentication;
+using FiscalPymeEC.Application.Authentication;
+using FiscalPymeEC.Infrastructure.Persistence.Repositories;
 
 namespace FiscalPymeEC.Infrastructure;
 
@@ -35,6 +37,22 @@ public static class DependencyInjection
             {
                 options.UseNpgsql(connectionString);
             });
+
+        services.AddScoped<
+            IUserRepository,
+            UserRepository>();
+
+        services.AddScoped<
+            ILoginService,
+            LoginService>();
+
+        services.Configure<JwtOptions>(
+            configuration.GetSection(
+                JwtOptions.SectionName));
+
+        services.AddSingleton<
+            ITokenGenerator,
+            JwtTokenGenerator>();
 
         return services;
     }
