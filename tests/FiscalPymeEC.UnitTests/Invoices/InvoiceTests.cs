@@ -231,6 +231,160 @@ public sealed class InvoiceTests
             exception.Message);
     }
 
+    [Fact]
+    public void ElectronicFlow_InCorrectOrder_AuthorizesInvoice()
+    {
+        var invoice = CreateIssuedInvoice();
+
+        invoice.MarkXmlAsGenerated();
+        Assert.Equal(InvoiceStatus.XmlGenerated, invoice.Status);
+
+        invoice.MarkAsSigned();
+        Assert.Equal(InvoiceStatus.Signed, invoice.Status);
+
+        invoice.MarkAsReceived();
+        Assert.Equal(InvoiceStatus.Received, invoice.Status);
+
+        var authorizedAt = new DateTimeOffset(
+            2026,
+            8,
+            6,
+            16,
+            0,
+            0,
+            TimeSpan.Zero);
+
+        invoice.Authorize(
+            "AUTHORIZATION-001",
+            authorizedAt);
+
+        Assert.Equal(InvoiceStatus.Authorized, invoice.Status);
+        Assert.Equal(
+            "AUTHORIZATION-001",
+            invoice.AuthorizationNumber);
+        Assert.Equal(authorizedAt, invoice.AuthorizedAtUtc);
+        Assert.Null(invoice.RejectionReason);
+    }
+
+    [Fact]
+    public void ElectronicFlow_WhenSriRejectsInvoice_StoresReason()
+    {
+        var invoice = CreateReceivedInvoice();
+
+        invoice.Reject("El XML contiene información inválida.");
+
+        Assert.Equal(InvoiceStatus.Rejected, invoice.Status);
+        Assert.Equal(
+            "El XML contiene información inválida.",
+            invoice.RejectionReason);
+        Assert.Null(invoice.AuthorizationNumber);
+        Assert.Null(invoice.AuthorizedAtUtc);
+    }
+
+    [Fact]
+    public void MarkXmlAsGenerated_WhenInvoiceIsDraft_ThrowsDomainException()
+    {
+        var invoice = CreateInvoice();
+
+        var exception = Assert.Throws<DomainException>(
+            invoice.MarkXmlAsGenerated);
+
+        Assert.Equal(
+            "Solo una factura emitida puede marcarse con XML generado.",
+            exception.Message);
+
+        Assert.Equal(InvoiceStatus.Draft, invoice.Status);
+    }
+
+    [Fact]
+    public void MarkAsSigned_WhenXmlWasNotGenerated_ThrowsDomainException()
+    {
+        var invoice = CreateIssuedInvoice();
+
+        var exception = Assert.Throws<DomainException>(
+            invoice.MarkAsSigned);
+
+        Assert.Equal(
+            "Solo una factura con XML generado puede marcarse como firmada.",
+            exception.Message);
+
+        Assert.Equal(InvoiceStatus.Issued, invoice.Status);
+    }
+
+    [Fact]
+    public void MarkAsReceived_WhenInvoiceWasNotSigned_ThrowsDomainException()
+    {
+        var invoice = CreateIssuedInvoice();
+        invoice.MarkXmlAsGenerated();
+
+        var exception = Assert.Throws<DomainException>(
+            invoice.MarkAsReceived);
+
+        Assert.Equal(
+            "Solo una factura firmada puede marcarse como recibida.",
+            exception.Message);
+
+        Assert.Equal(InvoiceStatus.XmlGenerated, invoice.Status);
+    }
+
+    [Fact]
+    public void Authorize_WhenInvoiceWasNotReceived_ThrowsDomainException()
+    {
+        var invoice = CreateIssuedInvoice();
+
+        var exception = Assert.Throws<DomainException>(() =>
+            invoice.Authorize(
+                "AUTHORIZATION-001",
+                DateTimeOffset.UtcNow));
+
+        Assert.Equal(
+            "Solo una factura recibida puede ser autorizada.",
+            exception.Message);
+    }
+
+    [Fact]
+    public void Authorize_WithEmptyAuthorizationNumber_ThrowsDomainException()
+    {
+        var invoice = CreateReceivedInvoice();
+
+        var exception = Assert.Throws<DomainException>(() =>
+            invoice.Authorize(
+                "",
+                DateTimeOffset.UtcNow));
+
+        Assert.Equal(
+            "El número de autorización es obligatorio.",
+            exception.Message);
+
+        Assert.Equal(InvoiceStatus.Received, invoice.Status);
+    }
+
+    [Fact]
+    public void Reject_WithEmptyReason_ThrowsDomainException()
+    {
+        var invoice = CreateReceivedInvoice();
+
+        var exception = Assert.Throws<DomainException>(() =>
+            invoice.Reject(""));
+
+        Assert.Equal(
+            "El motivo del rechazo es obligatorio.",
+            exception.Message);
+
+        Assert.Equal(InvoiceStatus.Received, invoice.Status);
+    }
+
+    private static Invoice CreateReceivedInvoice()
+    {
+        var invoice = CreateIssuedInvoice();
+
+        invoice.MarkXmlAsGenerated();
+        invoice.MarkAsSigned();
+        invoice.MarkAsReceived();
+
+        return invoice;
+    }
+
     private static Invoice CreateInvoice()
     {
         return new Invoice(
