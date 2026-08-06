@@ -54,6 +54,8 @@ public static class DependencyInjection
             ITokenGenerator,
             JwtTokenGenerator>();
 
+        services.AddScoped<DatabaseSeeder>();
+
         return services;
     }
 }

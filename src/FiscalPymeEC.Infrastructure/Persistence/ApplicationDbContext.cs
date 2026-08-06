@@ -10,7 +10,6 @@ using Microsoft.EntityFrameworkCore;
 using FiscalPymeEC.Application.Common.Interfaces;
 using FiscalPymeEC.Domain.Common;
 using System.Text.Json;
-using FiscalPymeEC.Domain.Auditing;
 using Microsoft.EntityFrameworkCore.ChangeTracking;
 using FiscalPymeEC.Domain.Users;
 

@@ -1,7 +1,8 @@
-using FiscalPymeEC.Infrastructure;
+using FiscalPymeEC.Api.Extensions;
 using FiscalPymeEC.Api.Services;
 using FiscalPymeEC.Application.Common.Interfaces;
-using FiscalPymeEC.Api.Extensions;
+using FiscalPymeEC.Infrastructure;
+using FiscalPymeEC.Infrastructure.Persistence;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -23,6 +24,19 @@ builder.Services.AddControllers();
 builder.Services.AddOpenApi();
 
 var app = builder.Build();
+
+if (app.Environment.IsDevelopment())
+{
+    await using var scope =
+        app.Services.CreateAsyncScope();
+
+    var databaseSeeder =
+        scope.ServiceProvider
+            .GetRequiredService<DatabaseSeeder>();
+
+    await databaseSeeder
+        .SeedInitialAdministratorAsync();
+}
 
 // Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())

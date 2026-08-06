@@ -103,7 +103,7 @@ public sealed class AuditingTests
     {
         return Environment.GetEnvironmentVariable(
             "FISCALPYME_TEST_CONNECTION")
-            ?? "Host=localhost;Port=5432;Database=fiscalpyme_tests;Username=fiscalpyme;Password=fiscalpyme_dev";
+            ?? "Host=localhost;Port=5433;Database=fiscalpyme_tests;Username=fiscalpyme;Password=fiscalpyme_dev";
     }
 
     private static string CreateRandomIdentification()
