@@ -12,6 +12,7 @@ using FiscalPymeEC.Domain.Common;
 using System.Text.Json;
 using FiscalPymeEC.Domain.Auditing;
 using Microsoft.EntityFrameworkCore.ChangeTracking;
+using FiscalPymeEC.Domain.Users;
 
 namespace FiscalPymeEC.Infrastructure.Persistence;
 
@@ -45,6 +46,9 @@ public sealed class ApplicationDbContext
 
     public DbSet<AuditEntry> AuditEntries =>
         Set<AuditEntry>();
+
+    public DbSet<User> Users =>
+    Set<User>();
 
     public override int SaveChanges()
     {
