@@ -1,8 +1,16 @@
 using FiscalPymeEC.Infrastructure;
+using FiscalPymeEC.Api.Services;
+using FiscalPymeEC.Application.Common.Interfaces;
 
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
+builder.Services.AddHttpContextAccessor();
+
+builder.Services.AddScoped<
+    ICurrentUserService,
+    CurrentUserService>();
+
 builder.Services.AddInfrastructure(
     builder.Configuration);
 
