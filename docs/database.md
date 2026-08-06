@@ -1,0 +1,8 @@
+users
+companies
+customers
+products
+invoices
+invoice_lines
+sri_submissions
+audit_entries
