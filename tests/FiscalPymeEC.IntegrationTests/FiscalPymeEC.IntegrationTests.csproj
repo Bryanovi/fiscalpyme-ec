@@ -22,6 +22,9 @@
 
   <ItemGroup>
     <ProjectReference Include="..\..\src\FiscalPymeEC.Api\FiscalPymeEC.Api.csproj" />
+    <ProjectReference Include="..\..\src\FiscalPymeEC.Domain\FiscalPymeEC.Domain.csproj" />
+    <ProjectReference Include="..\..\src\FiscalPymeEC.Application\FiscalPymeEC.Application.csproj" />
+    <ProjectReference Include="..\..\src\FiscalPymeEC.Infrastructure\FiscalPymeEC.Infrastructure.csproj" />
   </ItemGroup>
 
 </Project>
