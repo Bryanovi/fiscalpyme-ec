@@ -42,6 +42,12 @@ public sealed class Invoice : AuditableEntity
 
     public DateTimeOffset? IssuedAtUtc { get; private set; }
 
+    public string? AuthorizationNumber { get; private set; }
+
+    public DateTimeOffset? AuthorizedAtUtc { get; private set; }
+
+    public string? RejectionReason { get; private set; }
+
     public InvoiceStatus Status { get; private set; } =
         InvoiceStatus.Draft;
 
@@ -126,12 +132,87 @@ public sealed class Invoice : AuditableEntity
         Status = InvoiceStatus.Issued;
     }
 
+    public void MarkXmlAsGenerated()
+    {
+        EnsureStatus(
+            InvoiceStatus.Issued,
+            "Solo una factura emitida puede marcarse con XML generado.");
+
+        Status = InvoiceStatus.XmlGenerated;
+    }
+
+    public void MarkAsSigned()
+    {
+        EnsureStatus(
+            InvoiceStatus.XmlGenerated,
+            "Solo una factura con XML generado puede marcarse como firmada.");
+
+        Status = InvoiceStatus.Signed;
+    }
+
+    public void MarkAsReceived()
+    {
+        EnsureStatus(
+            InvoiceStatus.Signed,
+            "Solo una factura firmada puede marcarse como recibida.");
+
+        Status = InvoiceStatus.Received;
+    }
+
+    public void Authorize(
+        string authorizationNumber,
+        DateTimeOffset authorizedAtUtc)
+    {
+        EnsureStatus(
+            InvoiceStatus.Received,
+            "Solo una factura recibida puede ser autorizada.");
+
+        if (string.IsNullOrWhiteSpace(authorizationNumber))
+        {
+            throw new DomainException(
+                "El número de autorización es obligatorio.");
+        }
+
+        AuthorizationNumber = authorizationNumber.Trim();
+        AuthorizedAtUtc = authorizedAtUtc;
+        RejectionReason = null;
+        Status = InvoiceStatus.Authorized;
+    }
+
+    public void Reject(string rejectionReason)
+    {
+        EnsureStatus(
+            InvoiceStatus.Received,
+            "Solo una factura recibida puede ser rechazada.");
+
+        if (string.IsNullOrWhiteSpace(rejectionReason))
+        {
+            throw new DomainException(
+                "El motivo del rechazo es obligatorio.");
+        }
+
+        RejectionReason = rejectionReason.Trim();
+        AuthorizationNumber = null;
+        AuthorizedAtUtc = null;
+        Status = InvoiceStatus.Rejected;
+    }
+
     private void EnsureDraft()
     {
         if (Status != InvoiceStatus.Draft)
         {
             throw new DomainException(
                 "Solo se pueden modificar facturas en borrador.");
+        }
+    }
+
+    private void EnsureStatus(
+    InvoiceStatus expectedStatus,
+    string errorMessage)
+    {
+        if (Status != expectedStatus)
+        {
+            throw new DomainException(errorMessage);
         }
     }
 
