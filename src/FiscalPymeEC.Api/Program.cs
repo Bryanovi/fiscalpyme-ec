@@ -1,6 +1,7 @@
 using FiscalPymeEC.Infrastructure;
 using FiscalPymeEC.Api.Services;
 using FiscalPymeEC.Application.Common.Interfaces;
+using FiscalPymeEC.Api.Extensions;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -12,6 +13,9 @@ builder.Services.AddScoped<
     CurrentUserService>();
 
 builder.Services.AddInfrastructure(
+    builder.Configuration);
+
+builder.Services.AddJwtAuthentication(
     builder.Configuration);
 
 builder.Services.AddControllers();
@@ -28,6 +32,7 @@ if (app.Environment.IsDevelopment())
 
 app.UseHttpsRedirection();
 
+app.UseAuthentication();
 app.UseAuthorization();
 
 app.MapControllers();

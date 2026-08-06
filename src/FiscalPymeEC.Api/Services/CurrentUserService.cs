@@ -20,6 +20,7 @@ public sealed class CurrentUserService
     public string UserId =>
         HttpContext?.User.FindFirstValue(
             ClaimTypes.NameIdentifier)
+        ?? HttpContext?.User.FindFirstValue("sub")
         ?? "system";
 
     public bool IsAuthenticated =>
