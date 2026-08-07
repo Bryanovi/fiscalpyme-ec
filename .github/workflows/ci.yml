@@ -1,0 +1,51 @@
+name: CI
+
+on:
+  push:
+    branches:
+      - main
+
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  build-and-test:
+    name: Build and test
+    runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: postgres:17-alpine
+        env:
+          POSTGRES_DB: fiscalpyme_tests
+          POSTGRES_USER: fiscalpyme
+          POSTGRES_PASSWORD: fiscalpyme_dev
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd="pg_isready -U fiscalpyme -d fiscalpyme_tests"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=5
+
+    env:
+      FISCALPYME_TEST_CONNECTION: Host=127.0.0.1;Port=5432;Database=fiscalpyme_tests;Username=fiscalpyme;Password=fiscalpyme_dev
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Install .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 10.0.x
+
+      - name: Restore dependencies
+        run: dotnet restore FiscalPymeEC.sln
+
+      - name: Build solution
+        run: dotnet build FiscalPymeEC.sln --configuration Release --no-restore
+
+      - name: Run tests
+        run: dotnet test FiscalPymeEC.sln --configuration Release --no-build --verbosity normal
