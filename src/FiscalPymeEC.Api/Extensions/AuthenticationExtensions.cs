@@ -1,7 +1,6 @@
 ﻿using System.Security.Claims;
 using System.Text;
 using FiscalPymeEC.Domain.Users;
-using FiscalPymeEC.Infrastructure.Authentication;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
 
@@ -13,37 +12,32 @@ public static class AuthenticationExtensions
         this IServiceCollection services,
         IConfiguration configuration)
     {
-        var sectionName = JwtOptions.SectionName;
-
-        var issuer =
-            configuration[$"{sectionName}:Issuer"]
-            ?? throw new InvalidOperationException(
-                "El emisor JWT no está configurado.");
-
-        var audience =
-            configuration[$"{sectionName}:Audience"]
-            ?? throw new InvalidOperationException(
-                "La audiencia JWT no está configurada.");
-
-        var secretKey =
-            configuration[$"{sectionName}:SecretKey"]
-            ?? throw new InvalidOperationException(
-                "La clave JWT no está configurada.");
-
-        var secretBytes =
-            Encoding.UTF8.GetBytes(secretKey);
-
-        if (secretBytes.Length < 32)
-        {
-            throw new InvalidOperationException(
-                "La clave JWT debe contener al menos 32 bytes.");
-        }
-
         services
             .AddAuthentication(
                 JwtBearerDefaults.AuthenticationScheme)
             .AddJwtBearer(options =>
             {
+                var issuer = GetRequiredSetting(
+                    configuration,
+                    "Jwt:Issuer");
+
+                var audience = GetRequiredSetting(
+                    configuration,
+                    "Jwt:Audience");
+
+                var secretKey = GetRequiredSetting(
+                    configuration,
+                    "Jwt:SecretKey");
+
+                var secretBytes =
+                    Encoding.UTF8.GetBytes(secretKey);
+
+                if (secretBytes.Length < 32)
+                {
+                    throw new InvalidOperationException(
+                        "La clave JWT debe contener al menos 32 bytes.");
+                }
+
                 options.MapInboundClaims = true;
 
                 options.TokenValidationParameters =
@@ -64,10 +58,14 @@ public static class AuthenticationExtensions
                         RequireExpirationTime = true,
                         RequireSignedTokens = true,
 
-                        ClockSkew = TimeSpan.FromSeconds(30),
+                        ClockSkew =
+                            TimeSpan.FromSeconds(30),
 
-                        NameClaimType = ClaimTypes.Name,
-                        RoleClaimType = ClaimTypes.Role
+                        NameClaimType =
+                            ClaimTypes.Name,
+
+                        RoleClaimType =
+                            ClaimTypes.Role
                     };
             });
 
@@ -93,5 +91,14 @@ public static class AuthenticationExtensions
                 });
 
         return services;
+    }
+
+    private static string GetRequiredSetting(
+        IConfiguration configuration,
+        string key)
+    {
+        return configuration[key]
+            ?? throw new InvalidOperationException(
+                $"La configuración '{key}' no está definida.");
     }
 }
