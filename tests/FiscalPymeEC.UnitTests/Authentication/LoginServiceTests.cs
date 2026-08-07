@@ -194,7 +194,7 @@ public sealed class LoginServiceTests
     }
 
     private sealed class FakeUserRepository(
-        User? user) : IUserRepository
+    User? user) : IUserRepository
     {
         public bool GetByEmailWasCalled { get; private set; }
 
@@ -208,6 +208,30 @@ public sealed class LoginServiceTests
             RequestedEmail = email;
 
             return Task.FromResult(user);
+        }
+
+        public Task<bool> ExistsByEmailAsync(
+            string email,
+            CancellationToken cancellationToken = default)
+        {
+            var normalizedEmail =
+                email.Trim().ToLowerInvariant();
+
+            return Task.FromResult(
+                user?.Email == normalizedEmail);
+        }
+
+        public void Add(User newUser)
+        {
+            throw new NotSupportedException(
+                "Este método no se utiliza en las pruebas de inicio de sesión.");
+        }
+
+        public Task SaveChangesAsync(
+            CancellationToken cancellationToken = default)
+        {
+            throw new NotSupportedException(
+                "Este método no se utiliza en las pruebas de inicio de sesión.");
         }
     }
 

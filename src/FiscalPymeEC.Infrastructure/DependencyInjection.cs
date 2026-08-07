@@ -10,7 +10,7 @@ using Microsoft.Extensions.DependencyInjection;
 using FiscalPymeEC.Infrastructure.Authentication;
 using FiscalPymeEC.Application.Authentication;
 using FiscalPymeEC.Infrastructure.Persistence.Repositories;
-
+using FiscalPymeEC.Application.Users;
 
 namespace FiscalPymeEC.Infrastructure;
 
@@ -42,7 +42,7 @@ public static class DependencyInjection
         services.AddSingleton<
             IPasswordHasher,
             AspNetCorePasswordHasher>();
-
+        
         services.AddScoped<
             IUserRepository,
             UserRepository>();
@@ -50,6 +50,10 @@ public static class DependencyInjection
         services.AddScoped<
             ILoginService,
             LoginService>();
+
+        services.AddScoped<
+            ICreateUserService,
+            CreateUserService>();
 
         services.Configure<JwtOptions>(
             configuration.GetSection(
