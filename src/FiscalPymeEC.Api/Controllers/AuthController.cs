@@ -13,11 +13,16 @@ namespace FiscalPymeEC.Api.Controllers;
 public sealed class AuthController : ControllerBase
 {
     private readonly ILoginService _loginService;
+    private readonly IAuthenticationAuditService
+    _authenticationAuditService;
 
     public AuthController(
-        ILoginService loginService)
+    ILoginService loginService,
+    IAuthenticationAuditService authenticationAuditService)
     {
         _loginService = loginService;
+        _authenticationAuditService =
+            authenticationAuditService;
     }
 
     [AllowAnonymous]
@@ -40,6 +45,13 @@ public sealed class AuthController : ControllerBase
             command,
             cancellationToken);
 
+        await _authenticationAuditService
+            .RecordLoginAttemptAsync(
+                result?.UserId,
+                request.Email,
+                result is not null,
+                cancellationToken);
+
         if (result is null)
         {
             return Unauthorized(
@@ -55,6 +67,7 @@ public sealed class AuthController : ControllerBase
                 });
         }
 
+
         return Ok(
             new LoginResponse(
                 result.AccessToken,
@@ -63,6 +76,8 @@ public sealed class AuthController : ControllerBase
                 result.FullName,
                 result.Email,
                 result.Role));
+
+
     }
 
     [Authorize]

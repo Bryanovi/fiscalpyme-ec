@@ -11,6 +11,7 @@ using FiscalPymeEC.Infrastructure.Authentication;
 using FiscalPymeEC.Application.Authentication;
 using FiscalPymeEC.Infrastructure.Persistence.Repositories;
 
+
 namespace FiscalPymeEC.Infrastructure;
 
 public static class DependencyInjection
@@ -20,7 +21,7 @@ public static class DependencyInjection
         IConfiguration configuration
         )
     {
-
+        
         var connectionString =
             configuration.GetConnectionString("FiscalPyme")
             ?? throw new InvalidOperationException(
@@ -55,6 +56,10 @@ public static class DependencyInjection
             JwtTokenGenerator>();
 
         services.AddScoped<DatabaseSeeder>();
+
+        services.AddScoped<
+            IAuthenticationAuditService,
+            AuthenticationAuditService>();
 
         return services;
     }
