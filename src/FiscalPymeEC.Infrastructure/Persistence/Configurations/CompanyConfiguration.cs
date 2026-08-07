@@ -1,7 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
-using FiscalPymeEC.Domain.Companies;
+﻿using FiscalPymeEC.Domain.Companies;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
@@ -20,6 +17,18 @@ public sealed class CompanyConfiguration
                 tableBuilder.HasCheckConstraint(
                     "ck_companies_singleton_key",
                     "singleton_key = 1");
+
+                tableBuilder.HasCheckConstraint(
+                    "ck_companies_establishment_code",
+                    "establishment_code ~ '^[0-9]{3}$'");
+
+                tableBuilder.HasCheckConstraint(
+                    "ck_companies_emission_point_code",
+                    "emission_point_code ~ '^[0-9]{3}$'");
+
+                tableBuilder.HasCheckConstraint(
+                    "ck_companies_sri_environment",
+                    "sri_environment IN (1, 2)");
             });
 
         builder.HasKey(company => company.Id);
@@ -49,6 +58,25 @@ public sealed class CompanyConfiguration
         builder.Property(company => company.Address)
             .HasColumnName("address")
             .HasMaxLength(500)
+            .IsRequired();
+
+        builder.Property(company => company.EstablishmentCode)
+            .HasColumnName("establishment_code")
+            .HasMaxLength(3)
+            .HasDefaultValue("001")
+            .IsRequired();
+
+        builder.Property(company => company.EmissionPointCode)
+            .HasColumnName("emission_point_code")
+            .HasMaxLength(3)
+            .HasDefaultValue("001")
+            .IsRequired();
+
+        builder.Property(company => company.SriEnvironment)
+            .HasColumnName("sri_environment")
+            .HasConversion<int>()
+            .HasDefaultValue(SriEnvironment.Testing)
+            .HasSentinel((SriEnvironment)0)
             .IsRequired();
 
         ConfigureAuditProperties(builder);
