@@ -73,11 +73,11 @@ public sealed class AuthenticationApiFactory
                 existingUser =>
                     existingUser.Email == TestEmail);
 
-        var passwordHash =
-            passwordHasher.Hash(TestPassword);
-
         if (user is null)
         {
+            var passwordHash =
+                passwordHasher.Hash(TestPassword);
+
             user = new User(
                 "Administrador de integración",
                 TestEmail,
@@ -88,7 +88,16 @@ public sealed class AuthenticationApiFactory
         }
         else
         {
-            user.ChangePasswordHash(passwordHash);
+            var passwordIsValid =
+                passwordHasher.Verify(
+                    TestPassword,
+                    user.PasswordHash);
+
+            if (!passwordIsValid)
+            {
+                user.ChangePasswordHash(
+                    passwordHasher.Hash(TestPassword));
+            }
 
             if (!user.IsActive)
             {
@@ -96,8 +105,13 @@ public sealed class AuthenticationApiFactory
             }
         }
 
-        await dbContext.SaveChangesAsync();
+        if (dbContext.ChangeTracker.HasChanges())
+        {
+            await dbContext.SaveChangesAsync();
+        }
     }
+
+
 
     private static string GetConnectionString()
     {

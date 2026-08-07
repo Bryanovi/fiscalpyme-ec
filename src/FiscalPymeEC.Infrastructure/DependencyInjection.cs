@@ -21,23 +21,27 @@ public static class DependencyInjection
         IConfiguration configuration
         )
     {
-        
-        var connectionString =
-            configuration.GetConnectionString("FiscalPyme")
-            ?? throw new InvalidOperationException(
-                "No se encontró la cadena de conexión 'FiscalPyme'.");
+        services.AddDbContext<ApplicationDbContext>(
+          (serviceProvider, options) =>
+          {
+              var effectiveConfiguration =
+                  serviceProvider
+                      .GetRequiredService<IConfiguration>();
+
+              var connectionString =
+                  effectiveConfiguration
+                      .GetConnectionString("FiscalPyme")
+                  ?? throw new InvalidOperationException(
+                      "No se encontró la cadena de conexión 'FiscalPyme'.");
+
+              options.UseNpgsql(connectionString);
+          });
 
         services.AddSingleton<IClock, SystemClock>();
 
         services.AddSingleton<
             IPasswordHasher,
             AspNetCorePasswordHasher>();
-
-        services.AddDbContext<ApplicationDbContext>(
-            options =>
-            {
-                options.UseNpgsql(connectionString);
-            });
 
         services.AddScoped<
             IUserRepository,
