@@ -11,6 +11,7 @@ using FiscalPymeEC.Infrastructure.Authentication;
 using FiscalPymeEC.Application.Authentication;
 using FiscalPymeEC.Infrastructure.Persistence.Repositories;
 using FiscalPymeEC.Application.Users;
+using FiscalPymeEC.Application.Companies;
 
 namespace FiscalPymeEC.Infrastructure;
 
@@ -46,6 +47,18 @@ public static class DependencyInjection
         services.AddScoped<
             IUserRepository,
             UserRepository>();
+
+        services.AddScoped<
+            ICompanyRepository,
+            CompanyRepository>();
+
+        services.AddScoped<
+            IConfigureCompanyService,
+            ConfigureCompanyService>();
+
+        services.AddScoped<
+            IGetCompanyService,
+            GetCompanyService>();
 
         services.AddScoped<
             ILoginService,

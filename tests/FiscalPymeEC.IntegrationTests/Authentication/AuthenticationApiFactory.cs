@@ -6,6 +6,7 @@ using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using FiscalPymeEC.Domain.Companies;
 
 namespace FiscalPymeEC.IntegrationTests.Authentication;
 
@@ -109,6 +110,26 @@ public sealed class AuthenticationApiFactory
         {
             await dbContext.SaveChangesAsync();
         }
+    }
+
+    public async Task ResetCompanyAsync()
+    {
+        await using var scope =
+            Services.CreateAsyncScope();
+
+        var dbContext =
+            scope.ServiceProvider
+                .GetRequiredService<ApplicationDbContext>();
+
+        await dbContext.Database.MigrateAsync();
+
+        await dbContext.AuditEntries
+            .Where(entry =>
+                entry.EntityName == nameof(Company))
+            .ExecuteDeleteAsync();
+
+        await dbContext.Companies
+            .ExecuteDeleteAsync();
     }
 
 

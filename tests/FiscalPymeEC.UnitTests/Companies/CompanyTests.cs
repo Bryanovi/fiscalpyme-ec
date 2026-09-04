@@ -15,7 +15,10 @@ public sealed class CompanyTests
             "1790012345001",
             "FiscalPyme Ecuador S.A.",
             "FiscalPyme",
-            "Quito, Ecuador");
+            "Quito, Ecuador",
+            "001",
+            "001",
+            SriEnvironment.Testing);
 
         Assert.NotEqual(Guid.Empty, company.Id);
         Assert.Equal("1790012345001", company.Ruc);
@@ -32,7 +35,10 @@ public sealed class CompanyTests
                 "123456789",
                 "FiscalPyme Ecuador S.A.",
                 "FiscalPyme",
-                "Quito, Ecuador"));
+                "Quito, Ecuador",
+                "001",
+                "001",
+                SriEnvironment.Testing));
 
         Assert.Equal(
             "El RUC debe contener exactamente 13 dígitos.",
@@ -47,7 +53,10 @@ public sealed class CompanyTests
                 "179001234ABC1",
                 "FiscalPyme Ecuador S.A.",
                 "FiscalPyme",
-                "Quito, Ecuador"));
+                "Quito, Ecuador",
+                "001",
+                "001",
+                SriEnvironment.Testing));
     }
 
     [Fact]
@@ -58,10 +67,31 @@ public sealed class CompanyTests
                 "1790012345001",
                 "",
                 "FiscalPyme",
-                "Quito, Ecuador"));
+                "Quito, Ecuador",
+                "001",
+                "001",
+                SriEnvironment.Testing));
 
         Assert.Equal(
             "La razón social es obligatorio.",
+            exception.Message);
+    }
+
+    [Fact]
+    public void Constructor_WithInvalidEstablishmentCode_ThrowsDomainException()
+    {
+        var exception = Assert.Throws<DomainException>(() =>
+            new Company(
+                "1790012345001",
+                "FiscalPyme Ecuador S.A.",
+                "FiscalPyme",
+                "Quito, Ecuador",
+                "01",
+                "001",
+                SriEnvironment.Testing));
+
+        Assert.Equal(
+            "El código de establecimiento debe contener exactamente 3 dígitos.",
             exception.Message);
     }
 
@@ -72,7 +102,10 @@ public sealed class CompanyTests
             "1790012345001",
             "Nombre anterior",
             "Comercial anterior",
-            "Dirección anterior");
+            "Dirección anterior",
+                "001",
+                "001",
+                SriEnvironment.Testing);
 
         company.UpdateBusinessInformation(
             "Nueva razón social",
@@ -82,5 +115,12 @@ public sealed class CompanyTests
         Assert.Equal("Nueva razón social", company.LegalName);
         Assert.Equal("Nuevo nombre comercial", company.TradeName);
         Assert.Equal("Nueva dirección", company.Address);
+
+        Assert.Equal("001", company.EstablishmentCode);
+        Assert.Equal("001", company.EmissionPointCode);
+
+        Assert.Equal(
+            SriEnvironment.Testing,
+            company.SriEnvironment);
     }
 }
